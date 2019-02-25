@@ -172,6 +172,9 @@ type Options struct {
 
 	// KubernetesEastWestDomain sets the DNS domain to be used for east west traffic, defaults to "skipper.cluster.local"
 	KubernetesEastWestDomain string
+
+	// DefaultFiltersDir enables default filters mechanism and sets the location of the default filters
+	DefaultFiltersDir string
 }
 
 // Client is a Skipper DataClient implementation used to create routes based on Kubernetes Ingress settings.
@@ -195,6 +198,7 @@ type Client struct {
 	ingressesURI                string
 	servicesURI                 string
 	endpointsURI                string
+	defaultFiltersDir           string
 }
 
 var nonWord = regexp.MustCompile(`\W`)
@@ -289,6 +293,7 @@ func New(o Options) (*Client, error) {
 		ingressesURI:                ingressesClusterURI,
 		servicesURI:                 servicesClusterURI,
 		endpointsURI:                endpointsClusterURI,
+		defaultFiltersDir:           o.DefaultFiltersDir,
 	}
 	if o.KubernetesNamespace != "" {
 		result.setNamespace(o.KubernetesNamespace)
@@ -754,7 +759,7 @@ func applyAnnotationPredicates(m PathMode, r *eskip.Route, annotation string) er
 // valid ones.  Reporting failures in Ingress status is not possible,
 // because Ingress status field is v1.LoadBalancerIngress that only
 // supports IP and Hostname as string.
-func (c *Client) ingressToRoutes(state *clusterState) ([]*eskip.Route, error) {
+func (c *Client) ingressToRoutes(state *clusterState, defaultFilters map[resourceId]string) ([]*eskip.Route, error) {
 	routes := make([]*eskip.Route, 0, len(state.ingresses))
 	hostRoutes := make(map[string][]*eskip.Route)
 	redirect := createRedirectInfo(c.provideHTTPSRedirect, c.httpsRedirectCode)
@@ -788,6 +793,15 @@ func (c *Client) ingressToRoutes(state *clusterState) ([]*eskip.Route, error) {
 			}
 			annotationFilter += val
 		}
+
+		// add pre-configured default filters
+		if defFilter, ok := defaultFiltersOf(i, defaultFilters); ok {
+			if annotationFilter != "" {
+				annotationFilter += " -> "
+			}
+			annotationFilter += defFilter
+		}
+
 		// parse predicate annotation
 		var annotationPredicate string
 		if val, ok := i.Metadata.Annotations[skipperpredicateAnnotationKey]; ok {
@@ -955,6 +969,29 @@ func (c *Client) ingressToRoutes(state *clusterState) ([]*eskip.Route, error) {
 	}
 
 	return routes, nil
+}
+
+func defaultFiltersOf(i *ingressItem, defaultFilters map[resourceId]string) (string, bool) {
+	var filters []string
+	services := make(map[string]struct{})
+	for _, r := range i.Spec.Rules {
+		for _, p := range r.Http.Paths {
+			services[p.Backend.ServiceName] = struct{}{}
+		}
+	}
+
+	for s := range services {
+		if val, ok := defaultFilters[resourceId{name: s, namespace: i.Metadata.Namespace}]; ok {
+			filters = append(filters, val)
+		}
+	}
+
+	if len(filters) == 0 {
+		return "", false
+	}
+
+	result := strings.Join(filters, " -> ")
+	return result, true
 }
 
 func createEastWestRoute(eastWestDomainRegexpPostfix, name, ns string, r *eskip.Route) *eskip.Route {
@@ -1207,7 +1244,10 @@ func (c *Client) loadAndConvert() ([]*eskip.Route, error) {
 		return nil, err
 	}
 
-	r, err := c.ingressToRoutes(state)
+	defaultFilters := c.fetchDefaultFilterConfigs()
+	log.Debugf("got default filter configurations for %d services", len(defaultFilters))
+
+	r, err := c.ingressToRoutes(state, defaultFilters)
 	if err != nil {
 		log.Debugf("converting ingresses to routes failed: %v", err)
 		return nil, err
@@ -1338,4 +1378,30 @@ func (c *Client) Close() {
 	if c != nil && c.quit != nil {
 		close(c.quit)
 	}
+}
+
+func (c *Client) fetchDefaultFilterConfigs() map[resourceId]string {
+	if c.defaultFiltersDir == "" {
+		log.Debug("default filters are disabled")
+		return make(map[resourceId]string)
+	}
+
+	filters, err := c.getDefaultFilterConfigurations()
+
+	if err != nil {
+		log.WithError(err).Error("could not fetch default filter configurations (config map)")
+		return make(map[resourceId]string)
+	}
+
+	log.WithField("#configs", len(filters)).Debug("default filter configurations loaded")
+
+	return filters
+}
+
+func (c *Client) getDefaultFilterConfigurations() (map[resourceId]string, error) {
+	filters := make(map[resourceId]string)
+
+	//TODO load files from `c.defaultFiltersDir`
+
+	return filters, errors.New("not yet implemented")
 }

@@ -145,18 +145,18 @@ const (
 	waitFirstRouteLoadUsage        = "prevent starting the listener before the first batch of routes were loaded"
 
 	// Kubernetes:
-	kubernetesUsage                  = "enables skipper to generate routes for ingress resources in kubernetes cluster"
-	kubernetesInClusterUsage         = "specify if skipper is running inside kubernetes cluster"
-	kubernetesURLUsage               = "kubernetes API base URL for the ingress data client; requires kubectl proxy running; omit if kubernetes-in-cluster is set to true"
-	kubernetesHealthcheckUsage       = "automatic healthcheck route for internal IPs with path /kube-system/healthz; valid only with kubernetes"
-	kubernetesHTTPSRedirectUsage     = "automatic HTTP->HTTPS redirect route; valid only with kubernetes"
-	kubernetesHTTPSRedirectCodeUsage = "overrides the default redirect code (308) when used together with -kubernetes-https-redirect"
-	kubernetesIngressClassUsage      = "ingress class regular expression used to filter ingress resources for kubernetes"
-	whitelistedHealthCheckCIDRUsage  = "sets the iprange/CIDRS to be whitelisted during healthcheck"
-	kubernetesPathModeUsage          = "controls the default interpretation of Kubernetes ingress paths: kubernetes-ingress/path-regexp/path-prefix"
-	kubernetesNamespaceUsage         = "watch only this namespace for ingresses"
-	kubernetesEnableEastWestUsage    = "enables east-west communication, which automatically adds routes for Ingress objects with hostname <name>.<namespace>.skipper.cluster.local"
-	kubernetesEastWestDomainUsage    = "set the east-west domain, defaults to .skipper.cluster.local"
+	kubernetesUsage                   = "enables skipper to generate routes for ingress resources in kubernetes cluster"
+	kubernetesInClusterUsage          = "specify if skipper is running inside kubernetes cluster"
+	kubernetesURLUsage                = "kubernetes API base URL for the ingress data client; requires kubectl proxy running; omit if kubernetes-in-cluster is set to true"
+	kubernetesHealthcheckUsage        = "automatic healthcheck route for internal IPs with path /kube-system/healthz; valid only with kubernetes"
+	kubernetesHTTPSRedirectUsage      = "automatic HTTP->HTTPS redirect route; valid only with kubernetes"
+	kubernetesHTTPSRedirectCodeUsage  = "overrides the default redirect code (308) when used together with -kubernetes-https-redirect"
+	kubernetesIngressClassUsage       = "ingress class regular expression used to filter ingress resources for kubernetes"
+	whitelistedHealthCheckCIDRUsage   = "sets the iprange/CIDRS to be whitelisted during healthcheck"
+	kubernetesPathModeUsage           = "controls the default interpretation of Kubernetes ingress paths: kubernetes-ingress/path-regexp/path-prefix"
+	kubernetesNamespaceUsage          = "watch only this namespace for ingresses"
+	kubernetesEnableEastWestUsage     = "enables east-west communication, which automatically adds routes for Ingress objects with hostname <name>.<namespace>.skipper.cluster.local"
+	kubernetesEastWestDomainUsage     = "set the east-west domain, defaults to .skipper.cluster.local"
 
 	// OAuth2:
 	oauthURLUsage                        = "OAuth2 URL for Innkeeper authentication"
@@ -174,6 +174,9 @@ const (
 	apiUsageMonitoringClientKeysUsage                   = "comma separated list of names of the properties in the JWT body that contains the client ID"
 	apiUsageMonitoringDefaultClientTrackingPatternUsage = "*Deprecated*: set `client_tracking_pattern` directly on filter"
 	apiUsageMonitoringRealmsTrackingPatternUsage        = "regular expression used for matching monitored realms (defaults is 'services')"
+
+	// Default filters
+	defaultFiltersDirUsage      = "path to directory which contains default filter configurations per service and namespace (disabled if not set)"
 
 	// connections, timeouts:
 	waitForHealthcheckIntervalUsage   = "period waiting to become unhealthy in the loadbalancer pool in front of this instance, before shutdown triggered by SIGINT or SIGTERM"
@@ -295,18 +298,21 @@ var (
 	waitFirstRouteLoad        bool
 
 	// Kubernetes:
-	kubernetesIngress           bool
-	kubernetesInCluster         bool
-	kubernetesURL               string
-	kubernetesHealthcheck       bool
-	kubernetesHTTPSRedirect     bool
-	kubernetesHTTPSRedirectCode int
-	kubernetesIngressClass      string
-	whitelistedHealthCheckCIDR  string
-	kubernetesPathModeString    string
-	kubernetesNamespace         string
-	kubernetesEnableEastWest    bool
-	kubernetesEastWestDomain    string
+	kubernetesIngress            bool
+	kubernetesInCluster          bool
+	kubernetesURL                string
+	kubernetesHealthcheck        bool
+	kubernetesHTTPSRedirect      bool
+	kubernetesHTTPSRedirectCode  int
+	kubernetesIngressClass       string
+	whitelistedHealthCheckCIDR   string
+	kubernetesPathModeString     string
+	kubernetesNamespace          string
+	kubernetesEnableEastWest     bool
+	kubernetesEastWestDomain     string
+
+	// Default filters
+	defaultFiltersDir      string
 
 	// Auth:
 	oauthURL                        string
@@ -475,6 +481,9 @@ func init() {
 	flag.StringVar(&apiUsageMonitoringClientKeys, "api-usage-monitoring-client-keys", defaultApiUsageMonitoringClientKeys, apiUsageMonitoringClientKeysUsage)
 	flag.StringVar(&apiUsageMonitoringDefaultClientTrackingPattern, "api-usage-monitoring-default-client-tracking-pattern", defaultApiUsageMonitoringDefaultClientTrackingPattern, apiUsageMonitoringDefaultClientTrackingPatternUsage)
 	flag.StringVar(&apiUsageMonitoringRealmsTrackingPattern, "api-usage-monitoring-realms-tracking-pattern", defaultApiUsageMonitoringRealmsTrackingPattern, apiUsageMonitoringRealmsTrackingPatternUsage)
+
+	// Default filters:
+	flag.StringVar(&defaultFiltersDir, "default-filters-dir", "", defaultFiltersDirUsage)
 
 	// connections, timeouts:
 	flag.DurationVar(&waitForHealthcheckInterval, "wait-for-healthcheck-interval", defaultWaitForHealthcheckInterval, waitForHealthcheckIntervalUsage)
@@ -674,6 +683,9 @@ func main() {
 		ApiUsageMonitoringClientKeys:                   apiUsageMonitoringClientKeys,
 		ApiUsageMonitoringDefaultClientTrackingPattern: apiUsageMonitoringDefaultClientTrackingPattern,
 		ApiUsageMonitoringRealmsTrackingPattern:        apiUsageMonitoringRealmsTrackingPattern,
+
+		// Default filters:
+		DefaultFiltersDir: defaultFiltersDir,
 
 		// Auth:
 		OAuthUrl:                       oauthURL,

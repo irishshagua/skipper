@@ -509,6 +509,9 @@ type Options struct {
 	ApiUsageMonitoringDefaultClientTrackingPattern string
 	ApiUsageMonitoringRealmsTrackingPattern        string
 
+	// Default filters directory enables default filters mechanism and sets the directory where the filters are located
+	DefaultFiltersDir string
+
 	// WebhookTimeout sets timeout duration while calling a custom webhook auth service
 	WebhookTimeout time.Duration
 
@@ -602,18 +605,19 @@ func createDataClients(o Options, auth innkeeper.Authentication) ([]routing.Data
 
 	if o.Kubernetes {
 		kubernetesClient, err := kubernetes.New(kubernetes.Options{
-			KubernetesInCluster:        o.KubernetesInCluster,
-			KubernetesURL:              o.KubernetesURL,
-			ProvideHealthcheck:         o.KubernetesHealthcheck,
-			ProvideHTTPSRedirect:       o.KubernetesHTTPSRedirect,
-			HTTPSRedirectCode:          o.KubernetesHTTPSRedirectCode,
-			IngressClass:               o.KubernetesIngressClass,
-			ReverseSourcePredicate:     o.ReverseSourcePredicate,
-			WhitelistedHealthCheckCIDR: o.WhitelistedHealthCheckCIDR,
-			PathMode:                   o.KubernetesPathMode,
-			KubernetesNamespace:        o.KubernetesNamespace,
-			KubernetesEnableEastWest:   o.KubernetesEnableEastWest,
-			KubernetesEastWestDomain:   o.KubernetesEastWestDomain,
+			KubernetesInCluster:          o.KubernetesInCluster,
+			KubernetesURL:                o.KubernetesURL,
+			ProvideHealthcheck:           o.KubernetesHealthcheck,
+			ProvideHTTPSRedirect:         o.KubernetesHTTPSRedirect,
+			HTTPSRedirectCode:            o.KubernetesHTTPSRedirectCode,
+			IngressClass:                 o.KubernetesIngressClass,
+			ReverseSourcePredicate:       o.ReverseSourcePredicate,
+			WhitelistedHealthCheckCIDR:   o.WhitelistedHealthCheckCIDR,
+			PathMode:                     o.KubernetesPathMode,
+			KubernetesNamespace:          o.KubernetesNamespace,
+			KubernetesEnableEastWest:     o.KubernetesEnableEastWest,
+			KubernetesEastWestDomain:     o.KubernetesEastWestDomain,
+			DefaultFiltersDir: 			  o.DefaultFiltersDir,
 		})
 		if err != nil {
 			return nil, err

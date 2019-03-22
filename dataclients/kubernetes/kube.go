@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -1389,7 +1390,7 @@ func (c *Client) fetchDefaultFilterConfigs() map[resourceId]string {
 	filters, err := c.getDefaultFilterConfigurations()
 
 	if err != nil {
-		log.WithError(err).Error("could not fetch default filter configurations (config map)")
+		log.WithError(err).Error("could not fetch default filter configurations")
 		return make(map[resourceId]string)
 	}
 
@@ -1398,10 +1399,31 @@ func (c *Client) fetchDefaultFilterConfigs() map[resourceId]string {
 	return filters
 }
 
+const maxFileSize = 1024 * 1024 // 1MB
+
 func (c *Client) getDefaultFilterConfigurations() (map[resourceId]string, error) {
+	files, err := ioutil.ReadDir(c.defaultFiltersDir)
+	if err != nil {
+		return nil, err
+	}
+
 	filters := make(map[resourceId]string)
+	for _, f := range files {
+		r := strings.Split(f.Name(), ".") // format: {service}.{namespace}
+		if len(r) != 2 || f.IsDir() || f.Size() > maxFileSize {
+			log.WithError(err).WithField("file", f.Name()).Debug("incompatible file")
+			continue
+		}
 
-	//TODO load files from `c.defaultFiltersDir`
+		file := filepath.Join(c.defaultFiltersDir, f.Name())
+		config, err := ioutil.ReadFile(file)
+		if err != nil {
+			log.WithError(err).WithField("file", file).Debug("could not read file")
+			continue
+		}
 
-	return filters, errors.New("not yet implemented")
+		filters[resourceId{name: r[0], namespace: r[1]}] = string(config)
+	}
+
+	return filters, nil
 }

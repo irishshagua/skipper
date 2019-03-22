@@ -605,19 +605,19 @@ func createDataClients(o Options, auth innkeeper.Authentication) ([]routing.Data
 
 	if o.Kubernetes {
 		kubernetesClient, err := kubernetes.New(kubernetes.Options{
-			KubernetesInCluster:          o.KubernetesInCluster,
-			KubernetesURL:                o.KubernetesURL,
-			ProvideHealthcheck:           o.KubernetesHealthcheck,
-			ProvideHTTPSRedirect:         o.KubernetesHTTPSRedirect,
-			HTTPSRedirectCode:            o.KubernetesHTTPSRedirectCode,
-			IngressClass:                 o.KubernetesIngressClass,
-			ReverseSourcePredicate:       o.ReverseSourcePredicate,
-			WhitelistedHealthCheckCIDR:   o.WhitelistedHealthCheckCIDR,
-			PathMode:                     o.KubernetesPathMode,
-			KubernetesNamespace:          o.KubernetesNamespace,
-			KubernetesEnableEastWest:     o.KubernetesEnableEastWest,
-			KubernetesEastWestDomain:     o.KubernetesEastWestDomain,
-			DefaultFiltersDir: 			  o.DefaultFiltersDir,
+			KubernetesInCluster:        o.KubernetesInCluster,
+			KubernetesURL:              o.KubernetesURL,
+			ProvideHealthcheck:         o.KubernetesHealthcheck,
+			ProvideHTTPSRedirect:       o.KubernetesHTTPSRedirect,
+			HTTPSRedirectCode:          o.KubernetesHTTPSRedirectCode,
+			IngressClass:               o.KubernetesIngressClass,
+			ReverseSourcePredicate:     o.ReverseSourcePredicate,
+			WhitelistedHealthCheckCIDR: o.WhitelistedHealthCheckCIDR,
+			PathMode:                   o.KubernetesPathMode,
+			KubernetesNamespace:        o.KubernetesNamespace,
+			KubernetesEnableEastWest:   o.KubernetesEnableEastWest,
+			KubernetesEastWestDomain:   o.KubernetesEastWestDomain,
+			DefaultFiltersDir:          o.DefaultFiltersDir,
 		})
 		if err != nil {
 			return nil, err
